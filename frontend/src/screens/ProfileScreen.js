@@ -28,11 +28,14 @@ const ProfileScreen = ({ history }) => {
 	const myOrderList = useSelector((state) => state.myOrderList);
 	const { loading: loadingOrders, error: errorOrders, orders } = myOrderList;
 
+	console.count('Rendered');
+
 	useEffect(() => {
 		if (!userInfo) {
 			history.push('/login');
 		} else {
 			if (!user || !user.name || success) {
+				if (success) setMessage({ text: 'Profile updated successfully', type: 'success' });
 				dispatch({ type: USER_UPDATE_PROFILE_RESET });
 				dispatch(getUserDetails('profile'));
 				dispatch(listMyOrders());
@@ -46,115 +49,114 @@ const ProfileScreen = ({ history }) => {
 	const submitHandler = (event) => {
 		event.preventDefault();
 		setMessage(null);
-		if (password !== confirmPassword) {
-			setMessage('Passwords do not match');
-		} else {
-			dispatch(updateUserProfile({ _id: user._id, name, email, password }));
-		}
+		if (password !== confirmPassword) setMessage({ text: 'Passwords do not match', variant: 'danger' });
+		else dispatch(updateUserProfile({ _id: user._id, name, email, password }));
 	};
 
 	return (
-		<Row>
-			<Col md={3}>
-				<h3>User Profile</h3>
+		<>
+			{loading || loadingOrders ? (
+				<Loader />
+			) : (
+				<Row>
+					<Col md={3}>
+						<h3>User Profile</h3>
+						{message && <Message variant={message.variant}>{message.text}</Message>}
+						{error && <Message variant='danger'>{error}</Message>}
+						<Form onSubmit={submitHandler}>
+							<Form.Group controlId='name'>
+								<Form.Label>Name</Form.Label>
+								<Form.Control
+									type='text'
+									value={name}
+									placeholder='Enter name'
+									onChange={(event) => setName(event.target.value)}
+								></Form.Control>
+							</Form.Group>
 
-				{message && <Message variant='danger'>{message}</Message>}
-				{error && <Message variant='danger'>{error}</Message>}
-				{success && <Message variant='success'>Profile updated successfully</Message>}
-				{loading ? (
-					<Loader />
-				) : (
-					<Form onSubmit={submitHandler}>
-						<Form.Group controlId='name'>
-							<Form.Label>Name</Form.Label>
-							<Form.Control
-								type='text'
-								value={name}
-								placeholder='Enter name'
-								onChange={(event) => setName(event.target.value)}
-							></Form.Control>
-						</Form.Group>
+							<Form.Group controlId='email'>
+								<Form.Label>Email Address</Form.Label>
+								<Form.Control
+									type='email'
+									value={email}
+									placeholder='Enter email'
+									onChange={(event) => setEmail(event.target.value)}
+								></Form.Control>
+							</Form.Group>
 
-						<Form.Group controlId='email'>
-							<Form.Label>Email Address</Form.Label>
-							<Form.Control
-								type='email'
-								value={email}
-								placeholder='Enter email'
-								onChange={(event) => setEmail(event.target.value)}
-							></Form.Control>
-						</Form.Group>
+							<Form.Group controlId='password'>
+								<Form.Label>Password</Form.Label>
+								<Form.Control
+									type='password'
+									value={password}
+									placeholder='Enter password'
+									onChange={(event) => setPassword(event.target.value)}
+								></Form.Control>
+							</Form.Group>
 
-						<Form.Group controlId='password'>
-							<Form.Label>Password</Form.Label>
-							<Form.Control
-								type='password'
-								value={password}
-								placeholder='Enter password'
-								onChange={(event) => setPassword(event.target.value)}
-							></Form.Control>
-						</Form.Group>
+							<Form.Group controlId='confirmPassword'>
+								<Form.Label>Confirm Password</Form.Label>
+								<Form.Control
+									type='password'
+									value={confirmPassword}
+									placeholder='Confirm password'
+									onChange={(event) => setConfirmPassword(event.target.value)}
+								></Form.Control>
+							</Form.Group>
 
-						<Form.Group controlId='confirmPassword'>
-							<Form.Label>Confirm Password</Form.Label>
-							<Form.Control
-								type='password'
-								value={confirmPassword}
-								placeholder='Confirm password'
-								onChange={(event) => setConfirmPassword(event.target.value)}
-							></Form.Control>
-						</Form.Group>
-
-						<Button type='submit' variant='primary'>
-							Update
-						</Button>
-					</Form>
-				)}
-			</Col>
-			<Col md={9}>
-				<h3>My Orders</h3>
-				{loadingOrders ? (
-					<Loader />
-				) : errorOrders ? (
-					<Message variant='danger'>{errorOrders}</Message>
-				) : (
-					<Table striped bordered hover responsive className='table-sm'>
-						<thead>
-							<tr>
-								<th>ID</th>
-								<th>DATE</th>
-								<th>TOTAL</th>
-								<th>PAID</th>
-								<th>DELIVERED</th>
-								<th></th>
-							</tr>
-						</thead>
-						<tbody>
-							{orders &&
-								orders.length > 0 &&
-								orders.map((order) => (
-									<tr key={order._id}>
-										<td>{order._id}</td>
-										<td>{order.createdAt.substring(0, 10)}</td>
-										<td>${+order.totalPrice.toFixed(2)}</td>
-										<td>{order.isPaid ? order.paidAt.substring(0, 10) : <i className='fas fa-times' style={{ color: 'red' }}></i>}</td>
-										<td>
-											{order.isDelivered ? order.deliveredAt.substring(0, 10) : <i className='fas fa-times' style={{ color: 'red' }}></i>}
-										</td>
-										<td>
-											<LinkContainer to={`/order/${order._id}`}>
-												<Button variant='info' className='btn-sm'>
-													Details
-												</Button>
-											</LinkContainer>
-										</td>
+							<Button type='submit' variant='primary'>
+								Update
+							</Button>
+						</Form>
+					</Col>
+					<Col md={9}>
+						<h3>My Orders</h3>
+						{errorOrders ? (
+							<Message variant='danger'>{errorOrders}</Message>
+						) : (
+							<Table striped bordered hover responsive className='table-sm'>
+								<thead>
+									<tr>
+										<th>ID</th>
+										<th>DATE</th>
+										<th>TOTAL</th>
+										<th>PAID</th>
+										<th>DELIVERED</th>
+										<th></th>
 									</tr>
-								))}
-						</tbody>
-					</Table>
-				)}
-			</Col>
-		</Row>
+								</thead>
+								<tbody>
+									{orders &&
+										orders.length > 0 &&
+										orders.map((order) => (
+											<tr key={order._id}>
+												<td>{order._id}</td>
+												<td>{order.createdAt.substring(0, 10)}</td>
+												<td>${+order.totalPrice.toFixed(2)}</td>
+												<td>{order.isPaid ? order.paidAt.substring(0, 10) : <i className='fas fa-times' style={{ color: 'red' }}></i>}</td>
+												<td>
+													{order.isDelivered ? (
+														order.deliveredAt.substring(0, 10)
+													) : (
+														<i className='fas fa-times' style={{ color: 'red' }}></i>
+													)}
+												</td>
+												<td>
+													<LinkContainer to={`/order/${order._id}`}>
+														<Button variant='info' className='btn-sm'>
+															Details
+														</Button>
+													</LinkContainer>
+												</td>
+											</tr>
+										))}
+								</tbody>
+							</Table>
+						)}
+					</Col>
+				</Row>
+			)}
+		</>
 	);
 };
 
